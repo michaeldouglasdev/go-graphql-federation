@@ -1,0 +1,125 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: [
+      "@key"
+      "@shareable"
+      "@provides"
+      "@external"
+      "@tag"
+      "@extends"
+      "@override"
+      "@inaccessible"
+      "@interfaceObject"
+    ]
+  )
+
+directive @auth(type: UserType) on FIELD_DEFINITION
+
+type User @key(fields: "id") {
+  id: ID!
+  name: String!
+  type: UserType
+}
+
+enum UserType {
+  BASIC
+  ADMIN
+}
+
+type Query {
+  users: UsersQueries!
+}
+
+type Mutation {
+  users: UsersMutations!
+}
+
+type UsersQueries {
+  all: UsersAllResponse! @auth(type: ADMIN)
+  get(data: GetUserInput!): GetUserResponse!
+  me: MeUserResponse!
+}
+
+union MeUserResponse = User
+
+input GetUserInput {
+  type: GetUserInputType!
+  value: String!
+}
+enum GetUserInputType {
+  ID
+}
+
+type UserNotFoundError {
+  message: String!
+}
+type UsersAllResults {
+  results: [User]!
+}
+union UsersAllResponse =
+    UsersAllResults
+  | LoginRequiredError
+  | UnauthorizedError
+
+union GetUserResponse = User | UserNotFoundError
+
+# Generic Error section used by @auth directive
+type LoginRequiredError @shareable {
+  message: String!
+}
+type UnauthorizedError @shareable {
+  message: String!
+}
+
+#===============================================
+
+type UsersMutations {
+  create(data: CreateUserInput!): UsersCreateResponse!
+  login(data: LoginUserInput!): LoginUserResponse!
+}
+
+union UsersCreateResponse = User | Error
+
+# Create User Section
+input CreateUserInput {
+  username: String!
+  password: String!
+  name: String!
+}
+
+# ===================================================
+
+# Login User Section
+input LoginUserInput {
+  username: String!
+  password: String!
+}
+
+union LoginUserResponse =
+    Login
+  | LoginUserNotFoundError
+  | LoginUserInvalidUsernameOrPasswordError
+
+type LoginUserInvalidUsernameOrPasswordError {
+  message: String!
+}
+type LoginUserNotFoundError {
+  message: String!
+}
+
+type Login {
+  accessToken: String!
+  expiresIn: Int!
+  user: User!
+}
+
+type LoginUser {
+  id: ID!
+  username: String!
+  name: String!
+}
+
+type Error @shareable {
+  message: String!
+}

@@ -1,0 +1,175 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: [
+      "@key"
+      "@shareable"
+      "@provides"
+      "@external"
+      "@tag"
+      "@extends"
+      "@override"
+      "@inaccessible"
+      "@interfaceObject"
+    ]
+  )
+
+type Query {
+  items: ItemsQueries!
+}
+
+type ItemsQueries {
+  list(data: ItemsListInput): ItemsListResponse!
+  get(data: ItemsGetInput!): ItemsGetResponse!
+  foods: ItemsFoodsQueries!
+  toys: ItemsToysQueries!
+}
+
+input ItemsGetInput {
+  id: String!
+}
+
+union ItemsGetResponse = ItemFood | ItemToy | Error
+input ItemsListInput {
+  type: ItemType!
+}
+
+union ItemsListResponse = ItemsListResults | Error
+type ItemsListResults {
+  results: [Item]!
+}
+
+enum ItemType {
+  FOOD
+  TOY
+}
+#Foods section
+type ItemsFoodsQueries {
+  list: ItemsFoodsListResponse!
+  get(id: ID!): ItemsFoodsResponse!
+}
+
+union ItemsFoodsListResponse = ItemsFoodsListResults | Error
+type ItemsFoodsListResults {
+  results: [ItemFood]!
+}
+
+union ItemsFoodsResponse = ItemFood | Error
+#=================================================================
+
+#Toy Section
+type ItemsToysQueries {
+  list: ItemsToysListResponse!
+  get(id: ID!): ItemsToysResponse!
+}
+
+union ItemsToysListResponse = ItemsFoodsListResults | Error
+type ItemsToysListResults {
+  results: [ItemToy]!
+}
+
+union ItemsToysResponse = ItemFood | Error
+#=================================================================
+type Error @shareable {
+  message: String!
+}
+interface Item @key(fields: "id") {
+  id: ID!
+  name: String!
+  price: ItemPrice!
+  image: String!
+}
+
+type ItemPrice @shareable {
+  value: Float!
+}
+
+type ItemFood implements Item @key(fields: "id") {
+  id: ID!
+  name: String!
+  price: ItemPrice!
+  expirationTime: String
+  weight: String!
+  image: String!
+}
+
+type ItemToy implements Item @key(fields: "id") {
+  id: ID!
+  name: String!
+  price: ItemPrice!
+  category: ToyCategory!
+  material: ToyMaterial!
+  suitableFor: ToySuitableFor!
+  image: String!
+}
+enum ToyCategory {
+  INTERACTIVE
+}
+enum ToyMaterial {
+  PLASTIC
+}
+enum ToySuitableFor {
+  CATS
+  DOGS
+}
+
+type Mutation {
+  items: ItemsMutations!
+}
+
+type ItemsMutations {
+  create(data: ItemsCreateInput!): ItemsCreateResponse!
+  foods: ItemsFoodsMutationsResponse!
+  toys: ItemsFoodsMutationsResponse!
+}
+union ItemsCreateResponse = ItemFood | ItemToy | Error
+
+type ItemsFoodsMutationsResponse {
+  create(data: ItemsFoodsCreateInput!): ItemsFoodsCreateResponse!
+}
+
+type ItemsToysMutationsResponse {
+  create(data: ItemsToysCreateInput!): ItemsToysCreateResponse!
+}
+
+union ItemsFoodsCreateResponse = ItemFood | Error
+union ItemsToysCreateResponse = ItemToy | Error
+
+input ItemsFoodsCreateInput {
+  name: String!
+  price: Float!
+  expirationTime: String!
+  image: String!
+  weight: String!
+}
+
+input ItemsToysCreateInput {
+  name: String!
+  price: Float!
+  image: String!
+  suitableFor: ToySuitableFor!
+  material: ToyMaterial!
+  category: ToyCategory!
+}
+
+input ItemsCreateInput {
+  food: ItemsCreateFoodInput
+  toy: ItemsCreateToyInput
+}
+
+input ItemsCreateFoodInput {
+  name: String!
+  price: Float!
+  expirationTime: String!
+  image: String!
+  weight: String!
+}
+
+input ItemsCreateToyInput {
+  name: String!
+  price: Float!
+  image: String!
+  suitableFor: ToySuitableFor!
+  material: ToyMaterial!
+  category: ToyCategory!
+}

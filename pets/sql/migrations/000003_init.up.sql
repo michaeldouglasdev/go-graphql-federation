@@ -1,0 +1,7 @@
+ALTER TABLE pets
+ADD COLUMN user_id varchar(36) NOT NULL;
+
+ALTER TABLE pets
+ADD CONSTRAINT fk_user
+FOREIGN KEY (user_id) REFERENCES users(id)
+ON DELETE CASCADE;
