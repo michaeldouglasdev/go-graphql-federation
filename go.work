@@ -1,0 +1,13 @@
+go 1.22.3
+
+use ./users
+
+use ./pets
+
+use ./items
+
+use ./reviews
+
+use ./carts
+
+use ./services

@@ -1,0 +1,696 @@
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+{
+  query: Query
+  mutation: Mutation
+}
+
+directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
+
+directive @join__field(graph: join__Graph, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+
+directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true, isInterfaceObject: Boolean! = false) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+
+directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
+
+directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+
+type Cart
+  @join__type(graph: CARTS, key: "id")
+{
+  id: ID!
+  items: [CartItem]!
+  totalPrice: CartTotalPrice! @join__field(graph: CARTS, requires: "items { item { price { value } }}")
+}
+
+type CartItem
+  @join__type(graph: CARTS, key: "id")
+{
+  id: ID
+  item: Item!
+  qty: Int!
+}
+
+union CartResponse
+  @join__type(graph: CARTS)
+  @join__unionMember(graph: CARTS, member: "Cart")
+  @join__unionMember(graph: CARTS, member: "Error")
+ = Cart | Error
+
+input CartsAddInput
+  @join__type(graph: CARTS)
+{
+  item: CartsAddItemInput!
+}
+
+type CartsAddItemError
+  @join__type(graph: CARTS)
+{
+  message: String!
+}
+
+input CartsAddItemInput
+  @join__type(graph: CARTS)
+{
+  id: ID!
+  qty: Int!
+}
+
+union CartsAddItemResponse
+  @join__type(graph: CARTS)
+  @join__unionMember(graph: CARTS, member: "Cart")
+  @join__unionMember(graph: CARTS, member: "CartsAddItemError")
+ = Cart | CartsAddItemError
+
+union CartsAddResponse
+  @join__type(graph: CARTS)
+  @join__unionMember(graph: CARTS, member: "Cart")
+  @join__unionMember(graph: CARTS, member: "Error")
+ = Cart | Error
+
+type CartsMutations
+  @join__type(graph: CARTS)
+{
+  add(data: CartsAddInput!): CartsAddResponse!
+  remove: CartsRemove!
+}
+
+type CartsQueries
+  @join__type(graph: CARTS)
+{
+  """Always create a cart if dont find one"""
+  get(data: GetCartInput): CartResponse!
+}
+
+type CartsRemove
+  @join__type(graph: CARTS)
+{
+  item(data: CartsRemoveItemInput): CartsRemoveItemResponse!
+}
+
+type CartsRemoveItemError
+  @join__type(graph: CARTS)
+{
+  message: String!
+}
+
+input CartsRemoveItemInput
+  @join__type(graph: CARTS)
+{
+  id: ID!
+}
+
+union CartsRemoveItemResponse
+  @join__type(graph: CARTS)
+  @join__unionMember(graph: CARTS, member: "Cart")
+  @join__unionMember(graph: CARTS, member: "CartsRemoveItemError")
+ = Cart | CartsRemoveItemError
+
+type CartTotalPrice
+  @join__type(graph: CARTS)
+{
+  value: Float!
+}
+
+type CreateItemReviewError
+  @join__type(graph: REVIEWS)
+{
+  message: String!
+}
+
+input CreateItemReviewInput
+  @join__type(graph: REVIEWS)
+{
+  rating: Int!
+  text: String
+}
+
+union CreateItemReviewResponse
+  @join__type(graph: REVIEWS)
+  @join__unionMember(graph: REVIEWS, member: "ItemReview")
+  @join__unionMember(graph: REVIEWS, member: "CreateItemReviewError")
+  @join__unionMember(graph: REVIEWS, member: "LoginRequiredError")
+  @join__unionMember(graph: REVIEWS, member: "UnauthorizedError")
+ = ItemReview | CreateItemReviewError | LoginRequiredError | UnauthorizedError
+
+input CreateUserInput
+  @join__type(graph: USERS)
+{
+  username: String!
+  password: String!
+  name: String!
+}
+
+type Error
+  @join__type(graph: CARTS)
+  @join__type(graph: ITEMS)
+  @join__type(graph: PETS)
+  @join__type(graph: USERS)
+{
+  message: String!
+}
+
+input GetCartInput
+  @join__type(graph: CARTS)
+{
+  type: GetCartType!
+  value: String!
+}
+
+enum GetCartType
+  @join__type(graph: CARTS)
+{
+  CART_ID @join__enumValue(graph: CARTS)
+  USER_ID @join__enumValue(graph: CARTS)
+}
+
+input GetUserInput
+  @join__type(graph: USERS)
+{
+  type: GetUserInputType!
+  value: String!
+}
+
+enum GetUserInputType
+  @join__type(graph: USERS)
+{
+  ID @join__enumValue(graph: USERS)
+}
+
+union GetUserResponse
+  @join__type(graph: USERS)
+  @join__unionMember(graph: USERS, member: "User")
+  @join__unionMember(graph: USERS, member: "UserNotFoundError")
+ = User | UserNotFoundError
+
+interface Item
+  @join__type(graph: CARTS, key: "id", resolvable: false, isInterfaceObject: true)
+  @join__type(graph: ITEMS, key: "id")
+  @join__type(graph: REVIEWS, key: "id", isInterfaceObject: true)
+{
+  id: ID!
+  price: ItemPrice! @join__field(graph: CARTS, external: true) @join__field(graph: ITEMS)
+  name: String! @join__field(graph: ITEMS)
+  image: String! @join__field(graph: ITEMS)
+  reviewSummary: ItemReviewSummary @join__field(graph: REVIEWS)
+}
+
+type ItemFood implements Item
+  @join__implements(graph: ITEMS, interface: "Item")
+  @join__type(graph: ITEMS, key: "id")
+{
+  id: ID!
+  name: String!
+  price: ItemPrice!
+  expirationTime: String
+  weight: String!
+  image: String!
+  reviewSummary: ItemReviewSummary @join__field
+}
+
+type ItemPrice
+  @join__type(graph: CARTS)
+  @join__type(graph: ITEMS)
+{
+  value: Float!
+}
+
+type ItemReview
+  @join__type(graph: REVIEWS)
+{
+  user: User!
+  rating: Int!
+  createdAt: String!
+  text: String
+}
+
+type ItemReviewsMutations
+  @join__type(graph: REVIEWS)
+{
+  create(data: CreateItemReviewInput!): CreateItemReviewResponse!
+}
+
+type ItemReviewSummary
+  @join__type(graph: REVIEWS)
+{
+  total: Int!
+  average: Float!
+  review: [ItemReview]!
+}
+
+input ItemsCreateFoodInput
+  @join__type(graph: ITEMS)
+{
+  name: String!
+  price: Float!
+  expirationTime: String!
+  image: String!
+  weight: String!
+}
+
+input ItemsCreateInput
+  @join__type(graph: ITEMS)
+{
+  food: ItemsCreateFoodInput
+  toy: ItemsCreateToyInput
+}
+
+union ItemsCreateResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemFood")
+  @join__unionMember(graph: ITEMS, member: "ItemToy")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemFood | ItemToy | Error
+
+input ItemsCreateToyInput
+  @join__type(graph: ITEMS)
+{
+  name: String!
+  price: Float!
+  image: String!
+  suitableFor: ToySuitableFor!
+  material: ToyMaterial!
+  category: ToyCategory!
+}
+
+input ItemsFoodsCreateInput
+  @join__type(graph: ITEMS)
+{
+  name: String!
+  price: Float!
+  expirationTime: String!
+  image: String!
+  weight: String!
+}
+
+union ItemsFoodsCreateResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemFood")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemFood | Error
+
+union ItemsFoodsListResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemsFoodsListResults")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemsFoodsListResults | Error
+
+type ItemsFoodsListResults
+  @join__type(graph: ITEMS)
+{
+  results: [ItemFood]!
+}
+
+type ItemsFoodsMutationsResponse
+  @join__type(graph: ITEMS)
+{
+  create(data: ItemsFoodsCreateInput!): ItemsFoodsCreateResponse!
+}
+
+type ItemsFoodsQueries
+  @join__type(graph: ITEMS)
+{
+  list: ItemsFoodsListResponse!
+  get(id: ID!): ItemsFoodsResponse!
+}
+
+union ItemsFoodsResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemFood")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemFood | Error
+
+input ItemsGetInput
+  @join__type(graph: ITEMS)
+{
+  id: String!
+}
+
+union ItemsGetResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemFood")
+  @join__unionMember(graph: ITEMS, member: "ItemToy")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemFood | ItemToy | Error
+
+input ItemsListInput
+  @join__type(graph: ITEMS)
+{
+  type: ItemType!
+}
+
+union ItemsListResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemsListResults")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemsListResults | Error
+
+type ItemsListResults
+  @join__type(graph: ITEMS)
+{
+  results: [Item]!
+}
+
+type ItemsMutations
+  @join__type(graph: ITEMS)
+{
+  create(data: ItemsCreateInput!): ItemsCreateResponse!
+  foods: ItemsFoodsMutationsResponse!
+  toys: ItemsFoodsMutationsResponse!
+}
+
+type ItemsQueries
+  @join__type(graph: ITEMS)
+{
+  list(data: ItemsListInput): ItemsListResponse!
+  get(data: ItemsGetInput!): ItemsGetResponse!
+  foods: ItemsFoodsQueries!
+  toys: ItemsToysQueries!
+}
+
+input ItemsToysCreateInput
+  @join__type(graph: ITEMS)
+{
+  name: String!
+  price: Float!
+  image: String!
+  suitableFor: ToySuitableFor!
+  material: ToyMaterial!
+  category: ToyCategory!
+}
+
+union ItemsToysCreateResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemToy")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemToy | Error
+
+union ItemsToysListResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemsFoodsListResults")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemsFoodsListResults | Error
+
+type ItemsToysListResults
+  @join__type(graph: ITEMS)
+{
+  results: [ItemToy]!
+}
+
+type ItemsToysMutationsResponse
+  @join__type(graph: ITEMS)
+{
+  create(data: ItemsToysCreateInput!): ItemsToysCreateResponse!
+}
+
+type ItemsToysQueries
+  @join__type(graph: ITEMS)
+{
+  list: ItemsToysListResponse!
+  get(id: ID!): ItemsToysResponse!
+}
+
+union ItemsToysResponse
+  @join__type(graph: ITEMS)
+  @join__unionMember(graph: ITEMS, member: "ItemFood")
+  @join__unionMember(graph: ITEMS, member: "Error")
+ = ItemFood | Error
+
+type ItemToy implements Item
+  @join__implements(graph: ITEMS, interface: "Item")
+  @join__type(graph: ITEMS, key: "id")
+{
+  id: ID!
+  name: String!
+  price: ItemPrice!
+  category: ToyCategory!
+  material: ToyMaterial!
+  suitableFor: ToySuitableFor!
+  image: String!
+  reviewSummary: ItemReviewSummary @join__field
+}
+
+enum ItemType
+  @join__type(graph: ITEMS)
+{
+  FOOD @join__enumValue(graph: ITEMS)
+  TOY @join__enumValue(graph: ITEMS)
+}
+
+scalar join__FieldSet
+
+enum join__Graph {
+  CARTS @join__graph(name: "carts", url: "http://localhost:8085/query")
+  ITEMS @join__graph(name: "items", url: "http://localhost:8083/query")
+  PETS @join__graph(name: "pets", url: "http://localhost:8082/query")
+  REVIEWS @join__graph(name: "reviews", url: "http://localhost:8084/query")
+  USERS @join__graph(name: "users", url: "http://localhost:8081/query")
+}
+
+scalar link__Import
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+type Login
+  @join__type(graph: USERS)
+{
+  accessToken: String!
+  expiresIn: Int!
+  user: User!
+}
+
+type LoginRequiredError
+  @join__type(graph: REVIEWS)
+  @join__type(graph: USERS)
+{
+  message: String!
+}
+
+type LoginUser
+  @join__type(graph: USERS)
+{
+  id: ID!
+  username: String!
+  name: String!
+}
+
+input LoginUserInput
+  @join__type(graph: USERS)
+{
+  username: String!
+  password: String!
+}
+
+type LoginUserInvalidUsernameOrPasswordError
+  @join__type(graph: USERS)
+{
+  message: String!
+}
+
+type LoginUserNotFoundError
+  @join__type(graph: USERS)
+{
+  message: String!
+}
+
+union LoginUserResponse
+  @join__type(graph: USERS)
+  @join__unionMember(graph: USERS, member: "Login")
+  @join__unionMember(graph: USERS, member: "LoginUserNotFoundError")
+  @join__unionMember(graph: USERS, member: "LoginUserInvalidUsernameOrPasswordError")
+ = Login | LoginUserNotFoundError | LoginUserInvalidUsernameOrPasswordError
+
+union MeUserResponse
+  @join__type(graph: USERS)
+  @join__unionMember(graph: USERS, member: "User")
+ = User
+
+type Mutation
+  @join__type(graph: CARTS)
+  @join__type(graph: ITEMS)
+  @join__type(graph: PETS)
+  @join__type(graph: REVIEWS)
+  @join__type(graph: USERS)
+{
+  carts(id: ID!): CartsMutations! @join__field(graph: CARTS)
+  items: ItemsMutations! @join__field(graph: ITEMS)
+  pets: PetsMutations! @join__field(graph: PETS)
+  reviews: ItemReviewsMutations! @join__field(graph: REVIEWS)
+  users: UsersMutations! @join__field(graph: USERS)
+}
+
+type Pet
+  @join__type(graph: PETS, key: "id")
+{
+  id: ID!
+  name: String!
+  birthday: String!
+  breed: PetBreed!
+  user: User!
+}
+
+enum PetBreed
+  @join__type(graph: PETS)
+{
+  DOG @join__enumValue(graph: PETS)
+  CASH @join__enumValue(graph: PETS)
+}
+
+input PetsCreateInput
+  @join__type(graph: PETS)
+{
+  name: String!
+  birthday: String!
+  breed: PetBreed!
+}
+
+union PetsCreateResponse
+  @join__type(graph: PETS)
+  @join__unionMember(graph: PETS, member: "Pet")
+  @join__unionMember(graph: PETS, member: "Error")
+ = Pet | Error
+
+union PetsDeleteResponse
+  @join__type(graph: PETS)
+  @join__unionMember(graph: PETS, member: "Pet")
+  @join__unionMember(graph: PETS, member: "Error")
+ = Pet | Error
+
+union PetsGetResponse
+  @join__type(graph: PETS)
+  @join__unionMember(graph: PETS, member: "Pet")
+  @join__unionMember(graph: PETS, member: "Error")
+ = Pet | Error
+
+type PetsMutations
+  @join__type(graph: PETS)
+{
+  create(data: PetsCreateInput!): PetsCreateResponse!
+  delete(id: ID!): PetsDeleteResponse
+}
+
+type PetsQueries
+  @join__type(graph: PETS)
+{
+  all: [Pet]!
+  get(id: ID!): PetsGetResponse!
+}
+
+type Query
+  @join__type(graph: CARTS)
+  @join__type(graph: ITEMS)
+  @join__type(graph: PETS)
+  @join__type(graph: REVIEWS)
+  @join__type(graph: USERS)
+{
+  carts: CartsQueries! @join__field(graph: CARTS)
+  items: ItemsQueries! @join__field(graph: ITEMS)
+  pets: PetsQueries! @join__field(graph: PETS)
+  reviews: ReviewsQueries! @join__field(graph: REVIEWS)
+  users: UsersQueries! @join__field(graph: USERS)
+}
+
+type ReviewsQueries
+  @join__type(graph: REVIEWS)
+{
+  list: [ItemReview]!
+}
+
+enum ToyCategory
+  @join__type(graph: ITEMS)
+{
+  INTERACTIVE @join__enumValue(graph: ITEMS)
+}
+
+enum ToyMaterial
+  @join__type(graph: ITEMS)
+{
+  PLASTIC @join__enumValue(graph: ITEMS)
+}
+
+enum ToySuitableFor
+  @join__type(graph: ITEMS)
+{
+  CATS @join__enumValue(graph: ITEMS)
+  DOGS @join__enumValue(graph: ITEMS)
+}
+
+type UnauthorizedError
+  @join__type(graph: REVIEWS)
+  @join__type(graph: USERS)
+{
+  message: String!
+}
+
+type User
+  @join__type(graph: PETS, key: "id")
+  @join__type(graph: REVIEWS, key: "id")
+  @join__type(graph: USERS, key: "id")
+{
+  id: ID!
+  name: String! @join__field(graph: USERS)
+  type: UserType @join__field(graph: USERS)
+}
+
+type UserNotFoundError
+  @join__type(graph: USERS)
+{
+  message: String!
+}
+
+union UsersAllResponse
+  @join__type(graph: USERS)
+  @join__unionMember(graph: USERS, member: "UsersAllResults")
+  @join__unionMember(graph: USERS, member: "LoginRequiredError")
+  @join__unionMember(graph: USERS, member: "UnauthorizedError")
+ = UsersAllResults | LoginRequiredError | UnauthorizedError
+
+type UsersAllResults
+  @join__type(graph: USERS)
+{
+  results: [User]!
+}
+
+union UsersCreateResponse
+  @join__type(graph: USERS)
+  @join__unionMember(graph: USERS, member: "User")
+  @join__unionMember(graph: USERS, member: "Error")
+ = User | Error
+
+type UsersMutations
+  @join__type(graph: USERS)
+{
+  create(data: CreateUserInput!): UsersCreateResponse!
+  login(data: LoginUserInput!): LoginUserResponse!
+}
+
+type UsersQueries
+  @join__type(graph: USERS)
+{
+  all: UsersAllResponse!
+  get(data: GetUserInput!): GetUserResponse!
+  me: MeUserResponse!
+}
+
+enum UserType
+  @join__type(graph: REVIEWS)
+  @join__type(graph: USERS)
+{
+  BASIC @join__enumValue(graph: REVIEWS) @join__enumValue(graph: USERS)
+  ADMIN @join__enumValue(graph: REVIEWS) @join__enumValue(graph: USERS)
+}

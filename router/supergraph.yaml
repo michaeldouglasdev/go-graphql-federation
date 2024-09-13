@@ -1,0 +1,24 @@
+#supergraph.yaml
+federation_version: =2.7.0
+
+subgraphs:
+  users:
+    routing_url: http://localhost:8081/query
+    schema:
+      subgraph_url: http://localhost:8081/query
+  pets:
+    routing_url: http://localhost:8082/query
+    schema:
+      subgraph_url: http://localhost:8082/query
+  items:
+    routing_url: http://localhost:8083/query
+    schema:
+      subgraph_url: http://localhost:8083/query
+  reviews:
+    routing_url: http://localhost:8084/query
+    schema:
+      subgraph_url: http://localhost:8084/query
+  carts:
+    routing_url: http://localhost:8085/query
+    schema:
+      subgraph_url: http://localhost:8085/query

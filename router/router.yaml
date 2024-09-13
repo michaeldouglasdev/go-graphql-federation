@@ -1,0 +1,7 @@
+supergraph:
+  introspection: true
+  listen: 127.0.0.1:8080
+
+cors:
+  origins:
+    - http://localhost:3000

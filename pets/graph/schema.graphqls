@@ -1,0 +1,62 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: [
+      "@key"
+      "@shareable"
+      "@provides"
+      "@external"
+      "@tag"
+      "@extends"
+      "@override"
+      "@inaccessible"
+      "@interfaceObject"
+    ]
+  )
+
+type Query {
+  pets: PetsQueries!
+}
+
+type PetsQueries {
+  all: [Pet]!
+  get(id: ID!): PetsGetResponse!
+}
+
+union PetsGetResponse = Pet | Error
+type Pet @key(fields: "id") {
+  id: ID!
+  name: String!
+  birthday: String!
+  breed: PetBreed!
+  user: User!
+}
+
+type User @key(fields: "id") {
+  id: ID!
+}
+
+type Mutation {
+  pets: PetsMutations!
+}
+type PetsMutations {
+  create(data: PetsCreateInput!): PetsCreateResponse!
+  delete(id: ID!): PetsDeleteResponse
+}
+
+union PetsCreateResponse = Pet | Error
+union PetsDeleteResponse = Pet | Error
+
+input PetsCreateInput {
+  name: String!
+  birthday: String!
+  breed: PetBreed!
+}
+
+enum PetBreed {
+  DOG
+  CASH
+}
+type Error @shareable {
+  message: String!
+}

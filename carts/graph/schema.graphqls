@@ -1,0 +1,113 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: [
+      "@key"
+      "@requires"
+      "@shareable"
+      "@provides"
+      "@external"
+      "@tag"
+      "@extends"
+      "@override"
+      "@inaccessible"
+      "@interfaceObject"
+    ]
+  )
+
+type Query {
+  carts: CartsQueries!
+}
+
+type CartsQueries {
+  """
+  Always create a cart if dont find one
+  """
+  get(data: GetCartInput): CartResponse!
+}
+input GetCartInput {
+  type: GetCartType!
+  value: String!
+}
+
+enum GetCartType {
+  CART_ID
+  USER_ID
+}
+
+union CartResponse = Cart | Error
+type Cart @key(fields: "id") {
+  id: ID!
+  items: [CartItem]!
+  totalPrice: CartTotalPrice!
+    @requires(fields: "items { item { price { value } }}")
+}
+
+type CartTotalPrice {
+  value: Float!
+}
+type Error @shareable {
+  message: String!
+}
+
+type CartItem @key(fields: "id") {
+  id: ID
+  item: Item!
+  qty: Int!
+}
+type Item @key(fields: "id", resolvable: false) @interfaceObject {
+  id: ID!
+  price: ItemPrice! @external
+}
+
+type ItemPrice @shareable {
+  value: Float!
+}
+
+type Mutation {
+  carts(id: ID!): CartsMutations!
+}
+
+type CartsMutations {
+  add(data: CartsAddInput!): CartsAddResponse!
+  update(data: CartsUpdateInput!): CartsUpdateResponse!
+  remove: CartsRemove!
+}
+
+union CartsAddResponse = Cart | Error
+
+input CartsAddInput {
+  item: CartsAddItemInput!
+}
+input CartsAddItemInput {
+  id: ID!
+  qty: Int!
+}
+
+union CartsAddItemResponse = Cart | CartsAddItemError
+type CartsAddItemError {
+  message: String!
+}
+
+input CartsUpdateInput {
+  item: CartsUpdateItemInput!
+}
+input CartsUpdateItemInput {
+  id: ID!
+  qty: Int!
+}
+
+union CartsUpdateResponse = Cart | Error
+
+type CartsRemove {
+  item(data: CartsRemoveItemInput): CartsRemoveItemResponse!
+}
+
+input CartsRemoveItemInput {
+  id: ID!
+}
+union CartsRemoveItemResponse = Cart | CartsRemoveItemError
+
+type CartsRemoveItemError {
+  message: String!
+}

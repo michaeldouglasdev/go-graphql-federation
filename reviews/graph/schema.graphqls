@@ -1,0 +1,82 @@
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.3"
+    import: [
+      "@key"
+      "@shareable"
+      "@provides"
+      "@external"
+      "@tag"
+      "@extends"
+      "@override"
+      "@inaccessible"
+      "@interfaceObject"
+    ]
+  )
+
+directive @auth(type: UserType) on FIELD_DEFINITION
+
+enum UserType {
+  BASIC
+  ADMIN
+}
+
+type Query {
+  reviews: ReviewsQueries!
+}
+
+type ReviewsQueries {
+  list: [ItemReview]!
+}
+type Item @key(fields: "id") @interfaceObject {
+  id: ID!
+  reviewSummary: ItemReviewSummary
+}
+
+type ItemReviewSummary {
+  total: Int!
+  average: Float!
+  review: [ItemReview]!
+}
+
+type ItemReview {
+  user: User!
+  rating: Int!
+  createdAt: String!
+  text: String
+}
+
+type User @key(fields: "id") {
+  id: ID!
+}
+
+type Mutation {
+  reviews: ItemReviewsMutations!
+}
+
+type ItemReviewsMutations {
+  create(data: CreateItemReviewInput!): CreateItemReviewResponse! @auth
+}
+
+union CreateItemReviewResponse =
+    ItemReview
+  | CreateItemReviewError
+  | LoginRequiredError
+  | UnauthorizedError
+
+type CreateItemReviewError {
+  message: String!
+}
+
+input CreateItemReviewInput {
+  rating: Int!
+  text: String
+}
+
+# Generic Error section used by @auth directive
+type LoginRequiredError @shareable {
+  message: String!
+}
+type UnauthorizedError @shareable {
+  message: String!
+}
